@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>Inventory Barcode Scanner</title>
+
+  <script src="https://unpkg.com/html5-qrcode"
+          type="text/javascript"></script>
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: auto;
+    }
+
+    h1 {
+      font-size: 25px;
+      margin-bottom: 25px;
+    }
+
+    #reader {
+      width: 100%;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      margin-top: 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    #scanButton {
+      background: #1976d2;
+      color: white;
+    }
+
+    #stopButton {
+      background: #666;
+      color: white;
+      display: none;
+    }
+
+    .result {
+      background: white;
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 12px;
+      font-size: 18px;
+      word-break: break-all;
+    }
+
+    .barcode {
+      font-size: 24px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>📦 Inventory Barcode Scanner</h1>
+
+  <div id="reader"></div>
+
+  <button id="scanButton"
+          onclick="startScanner()">
+    📷 Scan Barcode
+  </button>
+
+  <button id="stopButton"
+          onclick="stopScanner()">
+    Stop Camera
+  </button>
+
+  <div class="result">
+
+    <div>Scanned Barcode</div>
+
+    <div id="barcode"
+         class="barcode">
+      —
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+let scanner = null;
+let scanning = false;
+
+
+function startScanner() {
+
+  if (scanning) {
+    return;
+  }
+
+  document.getElementById("barcode").innerText =
+    "Starting camera...";
+
+  scanner = new Html5Qrcode("reader");
+
+  const config = {
+
+    fps: 10,
+
+    qrbox: {
+      width: 280,
+      height: 160
+    },
+
+    aspectRatio: 1.7777778
+
+  };
+
+
+  scanner.start(
+
+    {
+      facingMode: "environment"
+    },
+
+    config,
+
+    function(decodedText, decodedResult) {
+
+      document.getElementById("barcode").innerText =
+        decodedText;
+
+      stopScanner();
+
+    },
+
+    function(errorMessage) {
+
+      // Scanner is continuously looking for a barcode.
+      // Temporary scanning errors are ignored.
+
+    }
+
+  )
+
+  .then(function() {
+
+    scanning = true;
+
+    document.getElementById("scanButton")
+      .style.display = "none";
+
+    document.getElementById("stopButton")
+      .style.display = "block";
+
+  })
+
+  .catch(function(error) {
+
+    document.getElementById("barcode").innerText =
+      "Camera error: " + error;
+
+  });
+
+}
+
+
+function stopScanner() {
+
+  if (!scanner || !scanning) {
+    return;
+  }
+
+  scanner.stop()
+
+    .then(function() {
+
+      scanner.clear();
+
+      scanning = false;
+
+      document.getElementById("scanButton")
+        .style.display = "block";
+
+      document.getElementById("stopButton")
+        .style.display = "none";
+
+    })
+
+    .catch(function(error) {
+
+      console.log(error);
+
+    });
+
+}
+
+</script>
+
+</body>
+</html>
