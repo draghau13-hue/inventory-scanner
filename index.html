@@ -27,8 +27,7 @@
 
     h1 {
       text-align: center;
-      font-size: 25px;
-      margin-bottom: 20px;
+      font-size: 24px;
     }
 
     #reader {
@@ -40,13 +39,12 @@
 
     button {
       width: 100%;
-      padding: 15px;
+      padding: 16px;
       margin-top: 15px;
       border: none;
       border-radius: 10px;
       font-size: 18px;
       font-weight: bold;
-      cursor: pointer;
     }
 
     #scanButton {
@@ -60,9 +58,18 @@
       display: none;
     }
 
+    .status {
+      background: white;
+      padding: 15px;
+      margin-top: 15px;
+      border-radius: 10px;
+      text-align: center;
+      font-weight: bold;
+    }
+
     .result {
       background: white;
-      margin-top: 20px;
+      margin-top: 15px;
       padding: 20px;
       border-radius: 12px;
     }
@@ -70,7 +77,8 @@
     .row {
       display: flex;
       justify-content: space-between;
-      padding: 10px 0;
+      gap: 15px;
+      padding: 12px 0;
       border-bottom: 1px solid #eee;
     }
 
@@ -80,26 +88,12 @@
 
     .value {
       text-align: right;
+      word-break: break-word;
     }
 
     .barcode {
       font-size: 20px;
       font-weight: bold;
-      word-break: break-all;
-    }
-
-    #status {
-      text-align: center;
-      margin-top: 15px;
-      font-weight: bold;
-    }
-
-    .not-found {
-      color: #d32f2f;
-    }
-
-    .success {
-      color: #2e7d32;
     }
   </style>
 </head>
@@ -120,7 +114,9 @@
     Stop Camera
   </button>
 
-  <div id="status"></div>
+  <div class="status" id="status">
+    Ready to scan
+  </div>
 
   <div class="result">
 
@@ -155,16 +151,13 @@
 
 <script>
 
-const API_URL =
-"https://script.google.com/macros/s/AKfycbwF6FKjfZ4vjc_k0HD-I5cHtzM1jLOo-kGtLvNZbVMjUn3ioIrA6pBoSxdxCD31dsQ/exec";
-
 let scanner = null;
 let scanning = false;
 
 
-/* =========================
-   START BARCODE SCANNER
-   ========================= */
+/* ============================
+   START SCANNER
+============================ */
 
 function startScanner() {
 
@@ -178,24 +171,62 @@ function startScanner() {
   scanner = new Html5Qrcode("reader");
 
   const config = {
-    fps: 10,
-    qrbox: {
-      width: 280,
-      height: 160
+
+    fps: 15,
+
+    qrbox: function(viewfinderWidth, viewfinderHeight) {
+
+      const width = Math.min(
+        Math.floor(viewfinderWidth * 0.85),
+        350
+      );
+
+      const height = Math.min(
+        Math.floor(viewfinderHeight * 0.35),
+        180
+      );
+
+      return {
+        width: width,
+        height: height
+      };
     },
-    aspectRatio: 1.7777778
+
+    aspectRatio: 1.7777778,
+
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.CODE_93,
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.ITF
+    ]
+
   };
 
+
   scanner.start(
+
     {
-      facingMode: "environment"
+      facingMode: {
+        exact: "environment"
+      }
     },
+
     config,
 
     function(decodedText, decodedResult) {
 
+      console.log("BARCODE DETECTED:", decodedText);
+
       document.getElementById("barcode").innerText =
         decodedText;
+
+      document.getElementById("status").innerText =
+        "✅ Barcode detected: " + decodedText;
 
       stopScanner();
 
@@ -204,10 +235,15 @@ function startScanner() {
     },
 
     function(errorMessage) {
-      // Ignore continuous scanning errors
+
+      // Scanner is continuously looking.
+      // Ignore normal scan failures.
+
     }
 
-  ).then(function() {
+  )
+
+  .then(function() {
 
     scanning = true;
 
@@ -218,21 +254,25 @@ function startScanner() {
       "block";
 
     document.getElementById("status").innerText =
-      "Point the camera at a barcode";
+      "📷 Point the camera at the barcode";
 
-  }).catch(function(error) {
+  })
+
+  .catch(function(error) {
+
+    console.error(error);
 
     document.getElementById("status").innerText =
-      "Camera error: " + error;
+      "❌ Camera error: " + error;
 
   });
 
 }
 
 
-/* =========================
+/* ============================
    STOP SCANNER
-   ========================= */
+============================ */
 
 function stopScanner() {
 
@@ -240,98 +280,102 @@ function stopScanner() {
     return;
   }
 
-  scanner.stop().then(function() {
+  scanner.stop()
 
-    scanner.clear();
+    .then(function() {
 
-    scanning = false;
+      scanner.clear();
 
-    document.getElementById("scanButton").style.display =
-      "block";
+      scanning = false;
 
-    document.getElementById("stopButton").style.display =
-      "none";
+      document.getElementById("scanButton").style.display =
+        "block";
 
-  }).catch(function(error) {
+      document.getElementById("stopButton").style.display =
+        "none";
 
-    console.log(error);
+    })
 
-  });
+    .catch(function(error) {
+
+      console.log(error);
+
+    });
 
 }
 
 
-/* =========================
-   FIND PRODUCT IN GOOGLE SHEET
-   ========================= */
+/* ============================
+   GOOGLE SHEETS LOOKUP
+============================ */
 
 function findProduct(barcode) {
 
   document.getElementById("status").innerText =
     "🔍 Searching inventory...";
 
-  document.getElementById("status").className = "";
+  const API_URL =
+    "https://script.google.com/macros/s/AKfycbwF6FKjfZ4vjc_k0HD-I5cHtzM1jLOo-kGtLvNZbVMjUn3ioIrA6pBoSxdxCD31dsQ/exec";
 
   const callbackName =
     "inventoryCallback_" + Date.now();
 
+
   window[callbackName] = function(data) {
 
-    try {
+    console.log("GOOGLE SHEETS RESPONSE:", data);
 
-      if (data.success && data.found) {
+    if (data.success && data.found) {
 
-        document.getElementById("productName").innerText =
-          data.productName || "—";
+      document.getElementById("productName").innerText =
+        data.productName || "—";
 
-        document.getElementById("category").innerText =
-          data.category || "—";
+      document.getElementById("category").innerText =
+        data.category || "—";
 
-        document.getElementById("openingStock").innerText =
-          data.openingStock ?? "0";
+      document.getElementById("openingStock").innerText =
+        data.openingStock ?? "0";
 
-        document.getElementById("reorderLevel").innerText =
-          data.reorderLevel ?? "0";
+      document.getElementById("reorderLevel").innerText =
+        data.reorderLevel ?? "0";
 
-        document.getElementById("status").innerText =
-          "✅ Product Found";
+      document.getElementById("status").innerText =
+        "✅ Product Found";
 
-        document.getElementById("status").className =
-          "success";
+    }
 
-      } else {
+    else {
 
-        document.getElementById("productName").innerText =
-          "Not Found";
+      document.getElementById("productName").innerText =
+        "Product Not Found";
 
-        document.getElementById("category").innerText =
-          "—";
+      document.getElementById("category").innerText =
+        "—";
 
-        document.getElementById("openingStock").innerText =
-          "—";
+      document.getElementById("openingStock").innerText =
+        "—";
 
-        document.getElementById("reorderLevel").innerText =
-          "—";
+      document.getElementById("reorderLevel").innerText =
+        "—";
 
-        document.getElementById("status").innerText =
-          "❌ Product not found in inventory";
+      document.getElementById("status").innerText =
+        "❌ Barcode not found in Products sheet";
 
-        document.getElementById("status").className =
-          "not-found";
+    }
 
-      }
 
-    } finally {
+    delete window[callbackName];
 
-      delete window[callbackName];
-      script.remove();
-
+    if (document.body.contains(script)) {
+      document.body.removeChild(script);
     }
 
   };
 
 
-  const script = document.createElement("script");
+  const script =
+    document.createElement("script");
+
 
   script.src =
     API_URL +
@@ -340,19 +384,20 @@ function findProduct(barcode) {
     "&callback=" +
     callbackName;
 
+
   script.onerror = function() {
 
     document.getElementById("status").innerText =
       "❌ Unable to connect to Google Sheets";
 
-    document.getElementById("status").className =
-      "not-found";
-
     delete window[callbackName];
 
-    script.remove();
+    if (document.body.contains(script)) {
+      document.body.removeChild(script);
+    }
 
   };
+
 
   document.body.appendChild(script);
 
