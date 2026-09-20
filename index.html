@@ -4,16 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Barcode Test</title>
+  <title>Inventory Barcode Test</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f4f6f8;
+      margin: 0;
       padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
     }
 
     #reader {
@@ -21,7 +26,7 @@
       max-width: 500px;
       margin: auto;
       background: white;
-      border-radius: 10px;
+      border-radius: 12px;
       overflow: hidden;
     }
 
@@ -30,7 +35,7 @@
       max-width: 500px;
       padding: 16px;
       margin-top: 20px;
-      border: 0;
+      border: none;
       border-radius: 10px;
       background: #1976d2;
       color: white;
@@ -39,12 +44,13 @@
     }
 
     #result {
+      width: 100%;
       max-width: 500px;
       margin: 20px auto;
-      padding: 20px;
+      padding: 20px 0;
       background: white;
       border-radius: 10px;
-      font-size: 22px;
+      font-size: 20px;
       font-weight: bold;
       word-break: break-all;
     }
@@ -53,25 +59,46 @@
 
 <body>
 
-<h2>📷 Barcode Test Scanner</h2>
+<h2>📦 Inventory Barcode Scanner</h2>
 
 <div id="reader"></div>
 
 <button onclick="startScanner()">
-  Start Scanner
+  📷 Start Scanner
 </button>
 
 <div id="result">
-  No barcode detected
+  Ready to scan
 </div>
 
 <script>
 
-let scanner;
+let scanner = null;
+let scanning = false;
 
 function startScanner() {
 
+  if (scanning) {
+    return;
+  }
+
   scanner = new Html5Qrcode("reader");
+
+  const config = {
+
+    fps: 15,
+
+    qrbox: {
+      width: 350,
+      height: 180
+    },
+
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.CODE_39
+    ]
+
+  };
 
   scanner.start(
 
@@ -79,17 +106,11 @@ function startScanner() {
       facingMode: "environment"
     },
 
-    {
-      fps: 10,
-
-      qrbox: {
-        width: 350,
-        height: 150
-      }
-
-    },
+    config,
 
     function(decodedText, decodedResult) {
+
+      console.log("DETECTED:", decodedText);
 
       document.getElementById("result").innerHTML =
         "✅ BARCODE DETECTED<br><br>" +
@@ -97,11 +118,13 @@ function startScanner() {
 
       scanner.stop();
 
+      scanning = false;
+
     },
 
     function(errorMessage) {
 
-      // Keep scanning
+      // Continue scanning
 
     }
 
@@ -109,15 +132,17 @@ function startScanner() {
 
   .then(function() {
 
+    scanning = true;
+
     document.getElementById("result").innerText =
-      "📷 Camera started. Point at barcode.";
+      "📷 Camera ready\n\nPoint at BAN412767";
 
   })
 
   .catch(function(error) {
 
     document.getElementById("result").innerText =
-      "Camera error: " + error;
+      "❌ Camera Error\n\n" + error;
 
   });
 
