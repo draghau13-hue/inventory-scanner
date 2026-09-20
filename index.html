@@ -1,243 +1,107 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Inventory Barcode Scanner</title>
+  <title>Barcode Test</title>
 
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
     body {
-      margin: 0;
-      padding: 20px;
       font-family: Arial, sans-serif;
-      background: #f4f6f8;
-    }
-
-    .container {
-      max-width: 500px;
-      margin: auto;
-    }
-
-    h1 {
       text-align: center;
-      font-size: 24px;
+      background: #f4f6f8;
+      padding: 20px;
     }
 
     #reader {
       width: 100%;
+      max-width: 500px;
+      margin: auto;
       background: white;
-      border-radius: 12px;
+      border-radius: 10px;
       overflow: hidden;
     }
 
     button {
       width: 100%;
+      max-width: 500px;
       padding: 16px;
-      margin-top: 15px;
-      border: none;
+      margin-top: 20px;
+      border: 0;
       border-radius: 10px;
+      background: #1976d2;
+      color: white;
       font-size: 18px;
       font-weight: bold;
     }
 
-    #scanButton {
-      background: #1976d2;
-      color: white;
-    }
-
-    #stopButton {
-      background: #666;
-      color: white;
-      display: none;
-    }
-
-    .status {
-      background: white;
-      padding: 15px;
-      margin-top: 15px;
-      border-radius: 10px;
-      text-align: center;
-      font-weight: bold;
-    }
-
-    .result {
-      background: white;
-      margin-top: 15px;
+    #result {
+      max-width: 500px;
+      margin: 20px auto;
       padding: 20px;
-      border-radius: 12px;
-    }
-
-    .row {
-      display: flex;
-      justify-content: space-between;
-      gap: 15px;
-      padding: 12px 0;
-      border-bottom: 1px solid #eee;
-    }
-
-    .label {
+      background: white;
+      border-radius: 10px;
+      font-size: 22px;
       font-weight: bold;
-    }
-
-    .value {
-      text-align: right;
-      word-break: break-word;
-    }
-
-    .barcode {
-      font-size: 20px;
-      font-weight: bold;
+      word-break: break-all;
     }
   </style>
 </head>
 
 <body>
 
-<div class="container">
+<h2>📷 Barcode Test Scanner</h2>
 
-  <h1>📦 Inventory Barcode Scanner</h1>
+<div id="reader"></div>
 
-  <div id="reader"></div>
+<button onclick="startScanner()">
+  Start Scanner
+</button>
 
-  <button id="scanButton" onclick="startScanner()">
-    📷 Scan Barcode
-  </button>
-
-  <button id="stopButton" onclick="stopScanner()">
-    Stop Camera
-  </button>
-
-  <div class="status" id="status">
-    Ready to scan
-  </div>
-
-  <div class="result">
-
-    <div class="row">
-      <div class="label">Barcode</div>
-      <div class="value barcode" id="barcode">—</div>
-    </div>
-
-    <div class="row">
-      <div class="label">Product</div>
-      <div class="value" id="productName">—</div>
-    </div>
-
-    <div class="row">
-      <div class="label">Category</div>
-      <div class="value" id="category">—</div>
-    </div>
-
-    <div class="row">
-      <div class="label">Opening Stock</div>
-      <div class="value" id="openingStock">—</div>
-    </div>
-
-    <div class="row">
-      <div class="label">Reorder Level</div>
-      <div class="value" id="reorderLevel">—</div>
-    </div>
-
-  </div>
-
+<div id="result">
+  No barcode detected
 </div>
 
 <script>
 
-let scanner = null;
-let scanning = false;
-
-
-/* ============================
-   START SCANNER
-============================ */
+let scanner;
 
 function startScanner() {
 
-  if (scanning) {
-    return;
-  }
-
-  document.getElementById("status").innerText =
-    "Starting camera...";
-
   scanner = new Html5Qrcode("reader");
-
-  const config = {
-
-    fps: 15,
-
-    qrbox: function(viewfinderWidth, viewfinderHeight) {
-
-      const width = Math.min(
-        Math.floor(viewfinderWidth * 0.85),
-        350
-      );
-
-      const height = Math.min(
-        Math.floor(viewfinderHeight * 0.35),
-        180
-      );
-
-      return {
-        width: width,
-        height: height
-      };
-    },
-
-    aspectRatio: 1.7777778,
-
-    formatsToSupport: [
-      Html5QrcodeSupportedFormats.CODE_128,
-      Html5QrcodeSupportedFormats.CODE_39,
-      Html5QrcodeSupportedFormats.CODE_93,
-      Html5QrcodeSupportedFormats.EAN_13,
-      Html5QrcodeSupportedFormats.EAN_8,
-      Html5QrcodeSupportedFormats.UPC_A,
-      Html5QrcodeSupportedFormats.UPC_E,
-      Html5QrcodeSupportedFormats.ITF
-    ]
-
-  };
-
 
   scanner.start(
 
     {
-      facingMode: {
-        exact: "environment"
-      }
+      facingMode: "environment"
     },
 
-    config,
+    {
+      fps: 10,
+
+      qrbox: {
+        width: 350,
+        height: 150
+      }
+
+    },
 
     function(decodedText, decodedResult) {
 
-      console.log("BARCODE DETECTED:", decodedText);
-
-      document.getElementById("barcode").innerText =
+      document.getElementById("result").innerHTML =
+        "✅ BARCODE DETECTED<br><br>" +
         decodedText;
 
-      document.getElementById("status").innerText =
-        "✅ Barcode detected: " + decodedText;
-
-      stopScanner();
-
-      findProduct(decodedText);
+      scanner.stop();
 
     },
 
     function(errorMessage) {
 
-      // Scanner is continuously looking.
-      // Ignore normal scan failures.
+      // Keep scanning
 
     }
 
@@ -245,161 +109,17 @@ function startScanner() {
 
   .then(function() {
 
-    scanning = true;
-
-    document.getElementById("scanButton").style.display =
-      "none";
-
-    document.getElementById("stopButton").style.display =
-      "block";
-
-    document.getElementById("status").innerText =
-      "📷 Point the camera at the barcode";
+    document.getElementById("result").innerText =
+      "📷 Camera started. Point at barcode.";
 
   })
 
   .catch(function(error) {
 
-    console.error(error);
-
-    document.getElementById("status").innerText =
-      "❌ Camera error: " + error;
+    document.getElementById("result").innerText =
+      "Camera error: " + error;
 
   });
-
-}
-
-
-/* ============================
-   STOP SCANNER
-============================ */
-
-function stopScanner() {
-
-  if (!scanner || !scanning) {
-    return;
-  }
-
-  scanner.stop()
-
-    .then(function() {
-
-      scanner.clear();
-
-      scanning = false;
-
-      document.getElementById("scanButton").style.display =
-        "block";
-
-      document.getElementById("stopButton").style.display =
-        "none";
-
-    })
-
-    .catch(function(error) {
-
-      console.log(error);
-
-    });
-
-}
-
-
-/* ============================
-   GOOGLE SHEETS LOOKUP
-============================ */
-
-function findProduct(barcode) {
-
-  document.getElementById("status").innerText =
-    "🔍 Searching inventory...";
-
-  const API_URL =
-    "https://script.google.com/macros/s/AKfycbwF6FKjfZ4vjc_k0HD-I5cHtzM1jLOo-kGtLvNZbVMjUn3ioIrA6pBoSxdxCD31dsQ/exec";
-
-  const callbackName =
-    "inventoryCallback_" + Date.now();
-
-
-  window[callbackName] = function(data) {
-
-    console.log("GOOGLE SHEETS RESPONSE:", data);
-
-    if (data.success && data.found) {
-
-      document.getElementById("productName").innerText =
-        data.productName || "—";
-
-      document.getElementById("category").innerText =
-        data.category || "—";
-
-      document.getElementById("openingStock").innerText =
-        data.openingStock ?? "0";
-
-      document.getElementById("reorderLevel").innerText =
-        data.reorderLevel ?? "0";
-
-      document.getElementById("status").innerText =
-        "✅ Product Found";
-
-    }
-
-    else {
-
-      document.getElementById("productName").innerText =
-        "Product Not Found";
-
-      document.getElementById("category").innerText =
-        "—";
-
-      document.getElementById("openingStock").innerText =
-        "—";
-
-      document.getElementById("reorderLevel").innerText =
-        "—";
-
-      document.getElementById("status").innerText =
-        "❌ Barcode not found in Products sheet";
-
-    }
-
-
-    delete window[callbackName];
-
-    if (document.body.contains(script)) {
-      document.body.removeChild(script);
-    }
-
-  };
-
-
-  const script =
-    document.createElement("script");
-
-
-  script.src =
-    API_URL +
-    "?barcode=" +
-    encodeURIComponent(barcode) +
-    "&callback=" +
-    callbackName;
-
-
-  script.onerror = function() {
-
-    document.getElementById("status").innerText =
-      "❌ Unable to connect to Google Sheets";
-
-    delete window[callbackName];
-
-    if (document.body.contains(script)) {
-      document.body.removeChild(script);
-    }
-
-  };
-
-
-  document.body.appendChild(script);
 
 }
 
